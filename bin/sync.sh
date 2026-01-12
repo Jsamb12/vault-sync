@@ -60,6 +60,10 @@ fi
 
 RSYNC_FLAGS=( -a -u --itemize-changes --human-readable )
 
+if [[ "${RSYNC_FLAGS_OVERRIDE:-}" == "--dry-run" ]]; then
+    RSYNC_FLAGS+=( --dry-run )
+fi
+
 echo "--- Pass 1: iCloud -> USB (copy/update) ---" | tee -a "$log_file"
 rsync "${RSYNC_FLAGS[@]}" "${RSYNC_EXCLUDES[@]}" \
     "$ICLOUD_VAULT_PATH/" "$USB_VAULT_PATH/" | tee -a "$log_file"
