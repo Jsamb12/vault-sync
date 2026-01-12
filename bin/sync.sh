@@ -32,7 +32,7 @@ if [[ -z "${USB_VOLUME_NAME:-}" ]]; then
 fi
 
 USB_MOUNT="/Volumes/$USB_VOLUME_NAME"
-USB_VAULT_PATH="$USB_MOUNT/${USB_VAULT_SUBDIR:-Obsidian}
+USB_VAULT_PATH="$USB_MOUNT/${USB_VAULT_SUBDIR:-Obsidian}"
 
 # Print a header so I can sanity check.
 echo "=== Vault sync $(date) ===" | tee -a "$log_file"
@@ -43,4 +43,29 @@ if [[ ! -d "$ICLOUD_VAULT_PATH" ]]; then
     echo "ERROR: iCloud vault path not found: $ICLOUD_VAULT_PATH" | tee -a "$log_file"
     exit 1
 fi
+if [[ ! -d "$USB_MOUNT" ]]; then
+    echo "ERROR: USB not mounted at: $USB_MOUNT" | tee -a "$log_file"
+    exit 1
+fi
 
+mkdir -p "$USB_VAULT_PATH"
+
+# Check whether the excludes array exists. We then loop thrpugh each patter and append --exclude=...
+RSYNC_EXCLUDES=()
+if declare -p EXCLUDES &>/dev/nul; then
+    for ex in "${EXCLUDES[@]}"; do
+        RSYNC_EXCLUDES+=( "--exclude=$ex")
+    done
+fi
+
+RSYNC_FLAGS=( -a -u --itemize-changes --human-readable )
+
+echo "--- Pass 1: iCloud -> USB (copy/update) ---" | tee -a "$log_file"
+rsync "${RSYNC_FLAGS[@]}" "${RSYNC_EXCLUDES[@]}" \
+    "$ICLOUD_VAULT_PATH/" "$USB_VAULT_PATH/" | tee -a "$log_file"
+
+echo "--- Pass 2: USB -> iCloud (copy/update) ---" | tee -a "$log_file"
+rsync "${RSYNC_FLAGS[@]}" "${RSYNC_EXCLUDES[@]}" \
+    "$USB_VAULT_PATH/" "$ICLOUD_VAULT_PATH/" | tee -a "$log_file"
+
+echo "Done. Log saved to: $log_file" | tee -a "$log_file"
