@@ -31,4 +31,8 @@ if [[ -z "${USB_VOLUME_NAME:-}" ]]; then
     exit 1
 fi
 
+# Print a header so I can sanity check.
+echo "=== Vault sync $(date) ===" | tee -a "$log_file"
+echo "iCloud Vault: $ICLOUD_VAULT_PATH" | tee -a "$log_file"
+echo "USB Vault:    $USB_VAULT_PATH" | tee -a "$log_file"
 
