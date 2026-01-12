@@ -31,8 +31,16 @@ if [[ -z "${USB_VOLUME_NAME:-}" ]]; then
     exit 1
 fi
 
+USB_MOUNT="/Volumes/$USB_VOLUME_NAME"
+USB_VAULT_PATH="$USB_MOUNT/${USB_VAULT_SUBDIR:-Obsidian}
+
 # Print a header so I can sanity check.
 echo "=== Vault sync $(date) ===" | tee -a "$log_file"
 echo "iCloud Vault: $ICLOUD_VAULT_PATH" | tee -a "$log_file"
 echo "USB Vault:    $USB_VAULT_PATH" | tee -a "$log_file"
+
+if [[ ! -d "$ICLOUD_VAULT_PATH" ]]; then
+    echo "ERROR: iCloud vault path not found: $ICLOUD_VAULT_PATH" | tee -a "$log_file"
+    exit 1
+fi
 
