@@ -1,7 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve the real path of this script (handles symlinks)
+SCRIPT_PATH="$0"
+if [[ "$SCRIPT_PATH" != /* ]]; then
+  SCRIPT_PATH="$PWD/$SCRIPT_PATH"
+fi
+while [[ -L "$SCRIPT_PATH" ]]; do
+  LINK_TARGET="$(readlink "$SCRIPT_PATH")"
+  if [[ "$LINK_TARGET" == /* ]]; then
+    SCRIPT_PATH="$LINK_TARGET"
+  else
+    SCRIPT_PATH="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)/$LINK_TARGET"
+  fi
+done
+
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONFIG_FILE="$ROOT_DIR/config/config.sh"
 LOG_DIR="$ROOT_DIR/logs"
@@ -53,10 +67,12 @@ mkdir -p "$USB_VAULT_PATH"
 
 # Check whether the excludes array exists. We then loop thrpugh each patter and append --exclude=...
 RSYNC_EXCLUDES=()
-if declare -p EXCLUDES &>/dev/nul; then
-    for ex in "${EXCLUDES[@]}"; do
-        RSYNC_EXCLUDES+=( "--exclude=$ex")
-    done
+
+# If EXCLUDES is an array, build --exclude=... arguments
+if declare -p EXCLUDES 2>/dev/null | grep -q 'declare \-a'; then
+  for ex in "${EXCLUDES[@]}"; do
+    RSYNC_EXCLUDES+=( "--exclude=$ex" )
+  done
 fi
 
 RSYNC_FLAGS=( -a -u --itemize-changes --human-readable )
@@ -66,11 +82,11 @@ if [[ "${RSYNC_FLAGS_OVERRIDE:-}" == "--dry-run" ]]; then
 fi
 
 echo "--- Pass 1: iCloud -> USB (copy/update) ---" | tee -a "$log_file"
-rsync "${RSYNC_FLAGS[@]}" "${RSYNC_EXCLUDES[@]}" \
+rsync "${RSYNC_FLAGS[@]}" "${RSYNC_EXCLUDES[@]:-}" \
     "$ICLOUD_VAULT_PATH/" "$USB_VAULT_PATH/" | tee -a "$log_file"
 
 echo "--- Pass 2: USB -> iCloud (copy/update) ---" | tee -a "$log_file"
-rsync "${RSYNC_FLAGS[@]}" "${RSYNC_EXCLUDES[@]}" \
+rsync "${RSYNC_FLAGS[@]}" "${RSYNC_EXCLUDES[@]:-}" \
     "$USB_VAULT_PATH/" "$ICLOUD_VAULT_PATH/" | tee -a "$log_file"
 
 echo "Done. Log saved to: $log_file" | tee -a "$log_file"
