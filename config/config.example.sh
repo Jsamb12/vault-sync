@@ -1,5 +1,5 @@
 # Obsidian vault folder on iCloud
-ICLOUD_VAULT_PATH="/Users/James/Library/Mobile\ Documents/com\~apple\~CloudDocs/Obsidian"
+ICLOUD_VAULT_PATH="/Users/James/Library/Mobile Documents/com~apple~CloudDocs/Obsidian"
 
 # USB name
 USB_VOLUME_NAME="/Volumes/BACKUP_USB"
